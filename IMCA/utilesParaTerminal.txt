@@ -1,0 +1,15 @@
+iniciar
+cd C:\Users\desarrollo\source\repos\NETCORE\ICARUS\MICROSERVICIOS\ARGOS
+.\env_new\Scripts\python.exe runserver.py
+
+reiniciar 
+Get-Process python* | Stop-Process -Force; Start-Sleep 2; cd C:\Users\desarrollo\source\repos\NETCORE\ICARUS\MICROSERVICIOS\ARGOS; .\env_new\Scripts\python.exe runserver.py
+
+matar/apagar 
+Get-Process python* | Stop-Process -Force
+
+consultar argos 
+Invoke-RestMethod -Uri "http://localhost:5000/health"
+
+
+para tunel ssh mcp ssh -L 14330:localhost:1433 root@194.164.171.217 

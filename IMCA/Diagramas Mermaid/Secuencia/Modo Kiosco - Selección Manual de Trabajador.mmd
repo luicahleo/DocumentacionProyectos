@@ -1,0 +1,135 @@
+sequenceDiagram
+    autonumber
+    actor T as Trabajador
+    participant K as Kiosco UI
+    participant SQLite as LocalDatabase
+    participant Cache as EmbeddingsCache<br/>(Memoria)
+    participant ONNX as Motor ONNX<br/>(MobileFaceNet)
+    participant ARGOS as ARGOS Server<br/>(ArcFace)
+    participant API as Backend API
+
+    Note over K: Pantalla de Inicio (Modo Kiosco)
+
+    %% === FASE 1: SELECCIÓN DE TRABAJADOR ===
+    T->>K: Click en "Iniciar Registro"
+    K->>SQLite: GetTrabajadoresAsync()
+    SQLite-->>K: Lista local (Nombres + Thumbnails)
+    
+    K->>T: Muestra selector de trabajadores
+    T->>K: Selecciona su nombre + "Continuar"
+    
+    Note over K: Resetear contador de<br/>intentos si cambió el trabajador
+
+    %% === FASE 2: CAPTURA Y VERIFICACIÓN ===
+    K->>T: Muestra preview de cámara
+    T->>K: Click en "Capturar"
+    K->>ONNX: Extraer embedding de foto<br/>(128-dim MobileFaceNet)
+    ONNX-->>K: float[128] embeddingCapturado
+    
+    %% Verificar intentos previos
+    Note over K: Contador de intentos<br/>para este trabajador?
+    
+    alt Intento 1-2
+        K->>Cache: VerificarTrabajadorAsync(embedding, trabajadorId)
+        
+        Note over Cache: Umbrales (Validados):<br/>≥75% = Verificado ✅<br/>40-75% = Zona Gris ⚠️<br/><40% = Rechazado ❌
+        
+        alt Similitud ≥75% (ONNX Match Directo)
+            Cache-->>K: (Verificado, similitud=88-92%)
+            Note over K: ✅ Verificado con ONNX Local<br/>Tiempo: ~400ms
+            K->>K: Resetear contador de intentos
+        else Similitud 40-75% (Zona Gris → ARGOS)
+            Cache-->>K: (ZonaGris, similitud=49-71%)
+            K->>ARGOS: GET /health
+            ARGOS-->>K: OK (API: connected)
+            K->>ARGOS: POST /identify (fotoBase64, clienteId)
+            Note over ARGOS: Verificación con ArcFace<br/>(512-dim, más preciso)<br/>Tiempo: 200-3600ms
+            
+            alt ARGOS confirma trabajadorId esperado (≥40%)
+                ARGOS-->>K: {identified: true, trabajadorId=8, similarity: 65%}
+                Note over K: ✅ Verificado con ARGOS<br/>Persona correcta confirmada
+                K->>K: Resetear contador de intentos
+            else ARGOS identifica OTRO trabajador
+                ARGOS-->>K: {identified: false, match=7, similarity: 22%}
+                Note over K: ❌ IMPOSTOR DETECTADO<br/>Match es con ID diferente
+                K->>K: Incrementar contador de intentos
+                K->>T: "⚠️ Rostro no coincide"
+            else ARGOS no disponible
+                ARGOS-->>K: timeout / error
+                K->>K: Incrementar contador de intentos
+                K->>T: "⚠️ Error de conexión"
+            end
+        else Similitud <40% (Rechazo directo)
+            Cache-->>K: (Rechazado, similitud=38%)
+            K->>K: Incrementar contador de intentos
+            K->>T: "❌ Identidad no verificada (intento X/3)"
+            Note over K: Fin - Volver a inicio
+        end
+    else Intento 3+ (Forzar ARGOS)
+        Note over K: 🔄 3er intento:<br/>Forzar verificación ARGOS<br/>(sin importar similitud ONNX)
+        K->>ARGOS: POST /identify (fotoBase64, clienteId)
+        
+        alt ARGOS confirma trabajadorId esperado
+            ARGOS-->>K: {identified: true, trabajadorId}
+            Note over K: ✅ Verificado con ARGOS (3er intento)
+            K->>K: Resetear contador de intentos
+        else ARGOS rechaza
+            ARGOS-->>K: {identified: false}
+            K->>T: "❌ Verificación fallida"
+            Note over K: Fin - Resetear contador
+        end
+    end
+    
+    %% === FASE 3: REGISTRO LOCAL (Solo si verificado) ===
+    rect rgb(200, 255, 200)
+        Note over K,SQLite: ✅ IDENTIDAD VERIFICADA - CREAR REGISTRO
+        K->>SQLite: Determinar tipo (Entrada/Salida)
+        SQLite-->>K: Último registro del día
+        
+        alt Sin registro previo hoy
+            Note over K: Tipo = ENTRADA
+        else Último fue Entrada
+            Note over K: Tipo = SALIDA
+        else Último fue Salida
+            Note over K: Tipo = ENTRADA
+        end
+        
+        K->>SQLite: INSERT RegistroLocal<br/>(TrabajadorId, FechaHora, Tipo, Sincronizado=false)
+        SQLite-->>K: registroId
+        
+        K->>T: "✅ ¡Registro Exitoso!<br/>Entrada/Salida registrada"
+    end
+    
+    Note over K: Timeout 5s → Reiniciar a Inicio
+
+    %% === FASE 4: SINCRONIZACIÓN (Cada 5 min / Timer) ===
+    rect rgb(240, 248, 255)
+        Note over K,API: ⏱️ SINCRONIZACIÓN AUTOMÁTICA (Timer 5s dev / 5 min prod)
+        
+        K->>API: GET /health (verificar conexión)
+        API-->>K: OK
+        
+        K->>SQLite: GetRegistrosPendientesSincronizarAsync()
+        SQLite-->>K: List<RegistroLocal> pendientes
+        
+        Note over K: Filtrar por reintentos exponenciales<br/>(2^n × 60s, máx 5 intentos)
+        
+        K->>API: POST /imca/registros/sincronizar-batch
+        
+        alt Registro sincronizado OK
+            API-->>K: {success: true, registroIdBackend: 123}
+            K->>SQLite: MarcarRegistroSincronizadoAsync(id, backendId)
+        else Duplicado detectado (±2h)
+            API-->>K: {success: false, error: "Ya existe registro..."}
+            Note over K: Incrementar contador de reintentos<br/>Seguirá intentando con backoff
+        end
+    end
+
+    %% === FASE 5: REFRESH DE CACHE (En paralelo) ===
+    rect rgb(255, 250, 240)
+        Note over K,API: 🔄 ACTUALIZACIÓN DE EMBEDDINGS
+        K->>API: GET /api/embeddings?clienteId=1
+        API-->>K: List<EmbeddingDTO> (5 trabajadores)
+        K->>Cache: RefreshCacheAsync(embeddings)
+        Note over Cache: Cache actualizado:<br/>5 embeddings MobileFN
+    end
