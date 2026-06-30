@@ -1,85 +1,88 @@
-# Diagramas de Estado - ICARUS
+# Diagramas de Estado — ICARUS
 
-## Estado de Cliente
+**Última actualización:** 2026-06-29 — validado contra código fuente
+
+> Solo se incluyen entidades con un **enum de estado real** en `ICARUS.Domain`. No se inventan estados
+> que no existan en el código.
+
+## Estado de Trabajador (`EstadoTrabajador`)
+
+Valores reales: `Activo=1`, `Inactivo=2`, `Suspendido=3`, `Despedido=4`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Pendiente: Registro
-    Pendiente --> Activo: Aprobar
-    Pendiente --> Rechazado: Rechazar
+    [*] --> Activo: Alta
     Activo --> Suspendido: Suspender
     Suspendido --> Activo: Reactivar
     Activo --> Inactivo: Desactivar
     Inactivo --> Activo: Reactivar
-    Rechazado --> [*]
-    Inactivo --> [*]: Eliminar
+    Activo --> Despedido: Despedir
+    Suspendido --> Despedido: Despedir
+    Despedido --> [*]
 ```
 
-## Estado de Trabajador
+## Estado de Cliente (`EstadoCliente`)
+
+Valores reales: `Activo=1`, `Inactivo=2`, `Suspendido=3`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Registrado: Crear
-    Registrado --> ConAccesoMovil: Habilitar móvil
-    ConAccesoMovil --> ConBiometricos: Registrar cara
-    ConBiometricos --> Activo: Completar setup
-    
+    [*] --> Activo
     Activo --> Suspendido: Suspender
     Suspendido --> Activo: Reactivar
-    
     Activo --> Inactivo: Desactivar
-    ConAccesoMovil --> Inactivo: Desactivar
-    
-    Inactivo --> [*]: Eliminar
+    Inactivo --> Activo: Reactivar
 ```
 
-## Estado de Registro de Acceso
+## Estado de Programa de Vacunación (`EstadoProgramaVacunacion`)
+
+Valores reales: `Activo=1`, `Inactivo=2`, `Archivado=3`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Capturando: Iniciar
-    Capturando --> Procesando: Foto capturada
-    Procesando --> Verificando: Embedding extraído
-    
-    Verificando --> Autorizado: Confianza >= 70%
-    Verificando --> Denegado: Confianza < 70%
-    Verificando --> Error: Fallo técnico
-    
-    Autorizado --> [*]: Registrado
-    Denegado --> [*]: Registrado
-    Error --> Capturando: Reintentar
-    Error --> [*]: Cancelar
+    [*] --> Activo
+    Activo --> Inactivo: Desactivar
+    Inactivo --> Activo: Reactivar
+    Activo --> Archivado: Archivar
+    Inactivo --> Archivado: Archivar
+    Archivado --> [*]
 ```
 
-## Estado de Galpon
+## Estado de Tarea de Galpón (`EstadoTarea`)
+
+Valores reales: `Pendiente=0`, `Completada=1`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Preparacion: Crear
-    Preparacion --> EnProduccion: Iniciar lote
-    EnProduccion --> EnVacunacion: Vacunar
-    EnVacunacion --> EnProduccion: Completar vacuna
-    EnProduccion --> Descanso: Fin de lote
-    Descanso --> Limpieza: Iniciar limpieza
-    Limpieza --> Preparacion: Preparar nuevo lote
-    
-    EnProduccion --> Cuarentena: Detectar enfermedad
-    Cuarentena --> EnProduccion: Recuperación
-    Cuarentena --> Descanso: Sacrificar lote
+    [*] --> Pendiente: tarea generada desde cronograma
+    Pendiente --> Completada: marcar completada (FechaAplicacion)
+    Completada --> [*]
 ```
 
-## Flujo de Producción Diaria
+## Estado de Despacho de Huevo (`EstadoDespacho`)
+
+Valores reales: `Preparado=0`, `Despachado=1`, `Verificado=2`.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> SinRegistro: Nuevo día
-    SinRegistro --> EnRegistro: Iniciar registro
-    EnRegistro --> Parcial: Guardar borrador
-    Parcial --> EnRegistro: Continuar
-    EnRegistro --> Completo: Finalizar
-    Completo --> Validado: Supervisor aprueba
-    Validado --> [*]
-    
-    Completo --> Rechazado: Supervisor rechaza
-    Rechazado --> EnRegistro: Corregir
+    [*] --> Preparado: crear despacho
+    Preparado --> Despachado: despachar (/{id}/despachar)
+    Despachado --> Verificado: verificar
+    Verificado --> [*]
+```
+
+## Estado de Pedido de Alimento (`EstadoPedido`)
+
+Valores reales: `Borrador=0`, `Solicitado=1`, `Recibido=3`, `Incompleto=4`, `Verificado=5`
+(el valor `2`/`EnTransito` fue eliminado en el código).
+
+```mermaid
+stateDiagram-v2
+    [*] --> Borrador
+    Borrador --> Solicitado: solicitar (/{id}/solicitar)
+    Solicitado --> Recibido: confirmar-recepcion
+    Solicitado --> Incompleto: recepción parcial
+    Recibido --> Verificado: verificar (/{id}/verificar)
+    Incompleto --> Verificado: verificar
+    Verificado --> [*]
 ```

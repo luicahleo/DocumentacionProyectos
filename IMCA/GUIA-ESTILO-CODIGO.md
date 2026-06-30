@@ -1,8 +1,10 @@
 # IMCA - Guía de Estilo de Código
 
-**Versión:** 1.0  
-**Fecha:** Diciembre 26, 2025  
-**Basado en:** Instrucciones MAUI OPTIMUS
+**Última actualización:** 2026-06-29 — validado contra código fuente
+**Versión:** 1.0 · **Basado en:** Instrucciones MAUI OPTIMUS
+
+> Las convenciones de este documento (MVVM estricto, `this.` explícito, tipos explícitos en
+> lugar de `var` para tipos built-in, comentarios XML) **coinciden con el código real**.
 
 ---
 

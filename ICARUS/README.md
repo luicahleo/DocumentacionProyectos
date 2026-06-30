@@ -1,496 +1,195 @@
-# Documentación Completa - Sistema ICARUS
+# ICARUS — Documentación Técnica (índice maestro)
 
-> **📍 Ubicación**: Este documento ahora está centralizado en `DocumentacionProyectos/ICARUS/`
+**Última actualización:** 2026-06-29 — validado contra código fuente
+**Stack:** .NET 10 · EF Core 10 · SQL Server · MediatR 12.5 · AutoMapper 12.0.1 · FluentValidation 12.0
 
-## 📋 Índice de Documentación
-
-Este repositorio contiene la documentación técnica completa del sistema ICARUS (Backend/Web) e ICARUS_MOBILE (aplicación móvil .NET MAUI).
-
----
-
-## 📊 Diagramas Técnicos
-
-| Tipo | Archivo | Contenido |
-|------|---------|-----------|
-| **Clases** | [diagramas/clases.md](diagramas/clases.md) | Entidades Domain, Control Acceso, Gestión Avícola |
-| **Secuencia** | [diagramas/secuencia.md](diagramas/secuencia.md) | Auth, Reconocimiento Facial, Producción, Módulos |
-| **Estado** | [diagramas/estado.md](diagramas/estado.md) | Cliente, Trabajador, Acceso, Galpón, Producción |
+> Esta documentación está optimizada para ser leída tanto por personas como por **agentes de IA**.
+> Cada documento incluye tablas **"Mapa de código"** que enlazan cada concepto con su ruta real de archivo
+> dentro de la solución `ICARUS/`. Cuando busques implementar o modificar algo, empieza por el mapa de código
+> del documento correspondiente.
 
 ---
 
-## 📚 Documentos Generados
+## 1. ¿Qué es ICARUS?
 
+ICARUS es una plataforma empresarial **modular y multi-tenant** para agroindustria, construida con
+**Clean Architecture** en **.NET 10**. Soporta varios clientes (empresas), a cada uno se le asignan
+módulos según su contrato. Los dos módulos funcionales implementados son:
 
-| # | Documento | Descripción | Páginas |
-|---|-----------|-------------|---------|
-| **00** | [RESUMEN-EJECUTIVO-ARQUITECTURA.md](00-RESUMEN-EJECUTIVO-ARQUITECTURA.md) | Overview general, patrones, métricas, tecnologías, stack técnico | **15** |
-| **01** | [DOMAIN-ENTIDADES.md](01-DOMAIN-ENTIDADES.md) | 30+ entidades del dominio, relaciones ER, business logic, BaseEntity | **25** |
-| **02** | [APPLICATION-CQRS.md](02-APPLICATION-CQRS.md) | 96 commands, 74 queries, MediatR handlers, DTOs, validators | **30** |
-| **03** | [INFRASTRUCTURE.md](03-INFRASTRUCTURE.md) | EF Core, ApplicationDbContext, repositories, migrations, configs | **20** |
-| **04** | [API-ENDPOINTS.md](04-API-ENDPOINTS.md) | REST API, JWT authentication, Swagger, CORS, 5 controllers | **18** |
-| **05** | [WEB-MVC.md](05-WEB-MVC.md) | ASP.NET Core MVC, Areas, Bootstrap 5, ASP.NET Identity, views | **22** |
-| **06** | [MOBILE-ARQUITECTURA.md](06-MOBILE-ARQUITECTURA.md) | .NET MAUI, MVVM, CommunityToolkit, JWT auth, SecureStorage | **20** |
-| **07** | [FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md) | Casos de uso end-to-end, sequence diagrams, validaciones | **25** |
-| **08** | [CONSOLIDACION-REFACTORIZACION.md](08-CONSOLIDACION-REFACTORIZACION.md) | Índice maestro, diagramas arquitectura, roadmap refactoring | **18** |
+- **Gestión Avícola**: granjas, galpones, producción de huevos, mortalidad, cronogramas
+  (vacunación / iluminación / alimentación) y un subdominio **Comercial/Contabilidad avícola**
+  (despachos de huevo, pedidos de alimento, precios, publicaciones de precios, balance de cuenta).
+- **Control de Acceso**: control físico de personal con **reconocimiento facial y huella**,
+  zonas, políticas, dispositivos/kioscos y registros de acceso.
 
-**📊 Total: ~193 páginas de documentación técnica**
+El ecosistema completo se compone de:
 
----
+```mermaid
+flowchart LR
+    subgraph Cliente
+        Web["ICARUS.Web<br/>(MVC + Identity)"]
+        Mobile["ICARUS_MOBILE<br/>(MAUI: IMGA / IMCA)"]
+    end
+    API["ICARUS.API<br/>(REST + JWT + Swagger)"]
+    ARGOS["ARGOS<br/>(Python/Flask + DeepFace)"]
+    DB[("SQL Server<br/>ICARUSDB")]
 
-## 🎯 Resumen Ejecutivo
-
-### Arquitectura del Sistema
-
-**ICARUS** es un sistema empresarial modular construido con **Clean Architecture** en **.NET 8**, compuesto por:
-
-1. **ICARUS Backend/Web** (Monolito Modular)
-   - `ICARUS.Domain`: Entidades de negocio (30+ clases)
-   - `ICARUS.Application`: CQRS con MediatR (96 commands + 74 queries)
-   - `ICARUS.Infrastructure`: EF Core + SQL Server + Repositories
-   - `ICARUS.API`: REST API con JWT para clientes móviles
-   - `ICARUS.Web`: ASP.NET Core MVC con ASP.NET Identity
-
-2. **ICARUS_MOBILE** (Aplicación Móvil)
-   - .NET MAUI (Android/iOS)
-   - MVVM con CommunityToolkit.Mvvm
-   - Consume ICARUS.API vía JWT
-
-### Módulos Funcionales
-
-- **Gestión Avícola**: Galpones, producción de huevos, mortalidad, programas de vacunación/iluminación/alimentación
-- **Control de Acceso**: Trabajadores, biométricos, turnos, políticas de acceso
-- **Facturación**: (Módulo base, no completamente implementado)
-
----
-
-## 🏗️ Diagrama de Capas
-
-```
-┌─────────────────────────────────────────────────────────┐
-│              PRESENTACIÓN                               │
-├───────────────────────────┬─────────────────────────────┤
-│     ICARUS.Web            │    ICARUS_MOBILE            │
-│  (ASP.NET Core MVC)       │    (.NET MAUI)              │
-│  - Razor Views            │    - XAML Views             │
-│  - Bootstrap 5            │    - MVVM Pattern           │
-│  - ASP.NET Identity       │    - JWT Authentication     │
-└───────────────────────────┴─────────────────────────────┘
-                           ▲
-                           │ HTTP/HTTPS
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                    ICARUS.API                           │
-│            (ASP.NET Core Web API)                       │
-│  - REST Endpoints                                       │
-│  - JWT Bearer Authentication                            │
-│  - Swagger/OpenAPI                                      │
-└─────────────────────────────────────────────────────────┘
-                           ▲
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│               ICARUS.Application                        │
-│                 (CQRS + MediatR)                        │
-│  - Commands (96)      - Queries (74)                    │
-│  - Handlers (170+)    - DTOs (100+)                     │
-│  - FluentValidation   - AutoMapper                      │
-└─────────────────────────────────────────────────────────┘
-                           ▲
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│              ICARUS.Infrastructure                      │
-│          (EF Core + Repositories)                       │
-│  - ApplicationDbContext                                 │
-│  - GenericRepository<T>                                 │
-│  - 30 Repositories específicos                          │
-│  - Entity Configurations (Fluent API)                   │
-└─────────────────────────────────────────────────────────┘
-                           ▲
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                  ICARUS.Domain                          │
-│              (Core Business Logic)                      │
-│  - 30+ Entities (BaseEntity)                            │
-│  - Interfaces (IRepository)                             │
-│  - Enums (Estados)                                      │
-│  - NO external dependencies                             │
-└─────────────────────────────────────────────────────────┘
-                           ▲
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────┐
-│                SQL Server Database                      │
-│           LUISCAHUANA\SQLEXPRESS (ICARUSDB)            │
-└─────────────────────────────────────────────────────────┘
+    Web -- "CQRS directo (MediatR)" --> DB
+    Mobile -- "HTTP/JWT" --> API
+    API -- "EF Core" --> DB
+    Mobile -- "captura facial" --> ARGOS
+    ARGOS -- "embeddings / validación" --> API
 ```
 
----
-
-## 🚀 Tecnologías Utilizadas
-
-### Backend (.NET 8)
-- **ASP.NET Core 8**: Web API + MVC
-- **Entity Framework Core 8**: ORM con Code-First
-- **MediatR**: CQRS pattern implementation
-- **AutoMapper**: Object-to-object mapping
-- **FluentValidation**: Input validation
-- **log4net**: Logging framework
-- **JWT Bearer**: API authentication
-- **ASP.NET Identity**: Web authentication
-
-### Frontend
-- **Bootstrap 5**: CSS framework
-- **jQuery**: JavaScript library
-- **DataTables**: Interactive tables
-- **SweetAlert2**: Custom alerts
-
-### Mobile (.NET MAUI)
-- **.NET MAUI**: Cross-platform framework
-- **CommunityToolkit.Mvvm**: MVVM helpers
-- **SecureStorage**: Token storage
-- **HttpClient**: API communication
-
-### Database
-- **SQL Server 2019+**: RDBMS
-- **EF Core Migrations**: Schema versioning
+> **Importante:** `ICARUS.Web` **NO** consume `ICARUS.API`. La Web es una aplicación MVC que ejecuta
+> CQRS (MediatR) **directamente** sobre el mismo `ApplicationDbContext` y usa **ASP.NET Identity local
+> (cookies)**. La API REST existe principalmente para las apps móviles y los kioscos biométricos.
 
 ---
 
-## 📊 Métricas del Proyecto
+## 2. Proyectos de la solución (`ICARUS.slnx`)
 
-| Métrica | ICARUS Backend | ICARUS_MOBILE | Total |
-|---------|----------------|---------------|-------|
-| **Proyectos** | 5 | 1 | 6 |
-| **Clases C#** | ~350 | ~80 | ~430 |
-| **Entidades** | 30 | 15 (modelos) | 45 |
-| **Commands** | 96 | - | 96 |
-| **Queries** | 74 | - | 74 |
-| **DTOs** | 100+ | - | 100+ |
-| **Repositories** | 30 | - | 30 |
-| **Controllers** | 15 (Web) + 5 (API) | - | 20 |
-| **ViewModels** | 50 (Web) | 20 (Mobile) | 70 |
-| **Views** | 60 (Razor) | 25 (XAML) | 85 |
-| **Migrations** | 15+ | - | 15+ |
-| **Líneas de código** | ~45,000 | ~12,000 | ~57,000 |
+| Proyecto | Tipo | TargetFramework | Responsabilidad |
+|----------|------|-----------------|-----------------|
+| `ICARUS.Domain` | classlib | net10.0 | Entidades, enums, interfaces de repositorio (sin dependencias externas) |
+| `ICARUS.Application` | classlib | net10.0 | CQRS (MediatR), DTOs, handlers, validators, AutoMapper, servicios de aplicación |
+| `ICARUS.Infrastructure` | classlib | net10.0 | EF Core, `ApplicationDbContext`, repositorios, UnitOfWork, migración, servicios de infra |
+| `ICARUS.API` | web | net10.0 | API REST + JWT + Swagger (móviles y kioscos) |
+| `ICARUS.Web` | web | net10.0 | MVC + Razor + Bootstrap + ASP.NET Identity (admin/gestión) |
+| `ICARUS.UnitTests` | xunit | net10.0 | Tests unitarios (handlers, dominio, controllers) |
+| `ICARUS.IntegrationTests` | xunit | net10.0 | Tests E2E con WebApplicationFactory + Testcontainers (SQL real) |
+| `MICROSERVICIOS/ARGOS` | pyproj (Python) | Python 3.9 | Microservicio de reconocimiento facial (Flask + DeepFace/ArcFace) |
 
----
-
-## 📖 Guía de Lectura
-
-### Para Desarrolladores Nuevos
-
-**Recomendación de lectura secuencial:**
-
-1. **[00-RESUMEN-EJECUTIVO-ARQUITECTURA.md](00-RESUMEN-EJECUTIVO-ARQUITECTURA.md)** → Entender el big picture
-2. **[01-DOMAIN-ENTIDADES.md](01-DOMAIN-ENTIDADES.md)** → Conocer el modelo de datos
-3. **[07-FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md)** → Ver cómo funciona end-to-end
-4. **[02-APPLICATION-CQRS.md](02-APPLICATION-CQRS.md)** → Comprender lógica de negocio
-5. Profundizar en capas específicas según necesidad
-
-### Para Arquitectos/Tech Leads
-
-**Documentos clave:**
-
-- **[00-RESUMEN-EJECUTIVO-ARQUITECTURA.md](00-RESUMEN-EJECUTIVO-ARQUITECTURA.md)** → Patrones y decisiones
-- **[08-CONSOLIDACION-REFACTORIZACION.md](08-CONSOLIDACION-REFACTORIZACION.md)** → Análisis y roadmap
-- **[03-INFRASTRUCTURE.md](03-INFRASTRUCTURE.md)** → Persistencia y configuración
-- **[04-API-ENDPOINTS.md](04-API-ENDPOINTS.md)** → Contratos API
-
-### Para Product Owners/QA
-
-**Documentos funcionales:**
-
-- **[07-FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md)** → Casos de uso completos
-- **[05-WEB-MVC.md](05-WEB-MVC.md)** → Funcionalidad web
-- **[06-MOBILE-ARQUITECTURA.md](06-MOBILE-ARQUITECTURA.md)** → Funcionalidad móvil
-
----
-
-## 🔑 Conceptos Clave
-
-### Clean Architecture
-
-El sistema sigue **Clean Architecture** con dependencias dirigidas hacia el centro:
+Flujo de dependencias (regla Clean Architecture: las capas internas no conocen a las externas):
 
 ```
-Domain (núcleo) ← Application ← Infrastructure ← Presentation
+API / Web  →  Application  →  Domain  ←  Infrastructure (implementa interfaces del Domain)
 ```
 
-**Regla de oro**: Las capas internas NO conocen las externas.
-
-### CQRS con MediatR
-
-**Command Query Responsibility Segregation**:
-- **Commands**: Modifican el estado (Create, Update, Delete)
-- **Queries**: Solo leen datos (GetById, GetAll, etc.)
-
-**Beneficios**:
-- Separación clara de responsabilidades
-- Validaciones específicas por operación
-- Testing simplificado
-
-### Repository Pattern + UnitOfWork
-
-- **GenericRepository<T>**: Operaciones CRUD básicas
-- **Repositorios específicos**: Queries complejas (ej: GetByClienteIdAsync)
-- **UnitOfWork**: Transacciones y SaveChanges centralizado
-
-### JWT Authentication
-
-- **API**: JWT Bearer tokens (7 días lifetime)
-- **Web**: ASP.NET Identity con cookies
-- **Mobile**: JWT almacenado en SecureStorage
+> Nota de implementación: `ICARUS.Application.csproj` referencia tanto a `Domain` como a `Infrastructure`,
+> y `ICARUS.Web` accede al `ApplicationDbContext` directamente. Es una variante pragmática de Clean
+> Architecture, no la forma canónica estricta.
 
 ---
 
-## 🛠️ Configuración del Entorno
+## 3. Métricas reales del backend
 
-### Requisitos Previos
+| Métrica | Valor real |
+|---------|-----------|
+| Archivos de entidad (`Domain/Entities`) | **42** (9 raíz + 24 GestionAvicola + 9 ControlAcceso) |
+| Enums (`Domain/Enums`) | **17** (+ enums embebidos en `ContabilidadEnums.cs` / `CiclosEnums.cs`) |
+| Interfaces de dominio | **34** |
+| Commands (`*Command.cs`) | **67** |
+| Queries (`*Query.cs`) | **51** |
+| Handlers totales | **124** |
+| Behaviors MediatR | **1** (`ValidationBehavior`) |
+| Perfiles AutoMapper | **7** |
+| Validators (FluentValidation) | **10** |
+| Features (Application) | **9** |
+| Repositorios (Infrastructure) | **30** |
+| Migraciones EF Core | **1** (consolidada: `InitialCreate`) |
+| DbSets en `ApplicationDbContext` | **40** propiedades (37 entidades; 3 duplicadas) |
+| Controllers API | **10** |
+| Areas Web | **3** con controllers (GestionAvicola, ControlAcceso, Identity) |
+| Controllers Web base | **8** |
 
-- **.NET 8 SDK**: [Descargar](https://dotnet.microsoft.com/download/dotnet/8.0)
-- **Visual Studio 2022** (17.8+) o VS Code
-- **SQL Server 2019+** (o LocalDB)
-- **Android Studio** (para desarrollo MAUI Android)
+---
 
-### Base de Datos
+## 4. Índice de documentos
 
-**Connection String** (appsettings.json):
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=LUISCAHUANA\\SQLEXPRESS;Database=ICARUSDB;Trusted_Connection=True;TrustServerCertificate=True"
-  }
-}
-```
+| # | Documento | Contenido |
+|---|-----------|-----------|
+| 00 | [00-RESUMEN-EJECUTIVO-ARQUITECTURA.md](00-RESUMEN-EJECUTIVO-ARQUITECTURA.md) | Visión general, stack, diagrama de capas, patrones |
+| 01 | [01-DOMAIN-ENTIDADES.md](01-DOMAIN-ENTIDADES.md) | 42 entidades, 17 enums, interfaces, diagrama ER |
+| 02 | [02-APPLICATION-CQRS.md](02-APPLICATION-CQRS.md) | 67 commands / 51 queries / 124 handlers / Features / AutoMapper / validators |
+| 03 | [03-INFRASTRUCTURE.md](03-INFRASTRUCTURE.md) | DbContext, repositorios, UnitOfWork, migración, servicios, comandos EF |
+| 04 | [04-API-ENDPOINTS.md](04-API-ENDPOINTS.md) | 10 controllers, endpoints, JWT, Swagger, CORS |
+| 05 | [05-WEB-MVC.md](05-WEB-MVC.md) | Areas, controllers, vistas, Identity, patrón CQRS-directo |
+| 06 | [06-MOBILE-ARQUITECTURA.md](06-MOBILE-ARQUITECTURA.md) | App MAUI (IMGA / IMCA), MVVM (referencia, fuera de este repo) |
+| 07 | [07-FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md) | Casos de uso end-to-end con diagramas de secuencia |
+| 11 | [11-ARGOS-RECONOCIMIENTO-FACIAL.md](11-ARGOS-RECONOCIMIENTO-FACIAL.md) | Microservicio Python de reconocimiento facial |
+| — | [SISTEMA-NOTIFICACIONES.md](SISTEMA-NOTIFICACIONES.md) | Detalle del sistema de notificaciones/tareas avícolas |
+| — | [SISTEMA-NOTIFICACIONES-MOBILE.md](SISTEMA-NOTIFICACIONES-MOBILE.md) | Notificaciones en la app móvil |
+| — | [SISTEMA-REGISTRO-PRODUCCION-MOBILE.md](SISTEMA-REGISTRO-PRODUCCION-MOBILE.md) | Registro de producción en la app móvil |
+| diag | [diagramas/clases.md](diagramas/clases.md) · [diagramas/secuencia.md](diagramas/secuencia.md) · [diagramas/estado.md](diagramas/estado.md) | Diagramas Mermaid |
 
-**Aplicar Migraciones**:
+---
+
+## 5. Cómo ejecutar
+
+### 5.1. Base de datos de desarrollo (Docker)
+
 ```bash
-cd ICARUS.Infrastructure
-dotnet ef database update --startup-project ../ICARUS.Web
+# Levantar SQL Server 2022 en contenedor (puerto 1433)
+docker compose -f docker-compose.dev.yml up -d
+# Connection string resultante:
+#   Server=localhost,1433;Database=ICARUSDB;User Id=sa;Password=Icarus@Dev2024!;TrustServerCertificate=True;MultipleActiveResultSets=true
 ```
 
-### Ejecutar Proyectos
+### 5.2. Migraciones EF Core
 
-**API** (puerto 5090/7090):
 ```bash
-cd ICARUS.API
-dotnet run --launch-profile http
+# La migración vive en ICARUS.Infrastructure; el proyecto de arranque es ICARUS.Web
+dotnet ef database update --project ICARUS.Infrastructure --startup-project ICARUS.Web
 ```
 
-**Web** (puerto 5188/7113):
+### 5.3. Ejecutar las aplicaciones .NET
+
 ```bash
-cd ICARUS.Web
-dotnet run --launch-profile http
+dotnet run --project ICARUS.Web    # MVC (admin/gestión)  → http://localhost:5090
+dotnet run --project ICARUS.API    # API REST (móviles)   → http://localhost:5000 (Swagger en la raíz)
 ```
 
-**Mobile** (emulador Android):
+### 5.4. Producción (Docker Compose)
+
+`docker-compose.yml` publica `icarus-web` (puerto 8080) e `icarus-api` (puerto 8081) sobre la red
+externa `trajano-shared-network`. Dockerfiles: `Dockerfile.web`, `Dockerfile.api`.
+
+### 5.5. Tests
+
 ```bash
-cd ICARUS_MOBILE/ICARUS_MOBILE
-dotnet build -t:Run -f net8.0-android
+dotnet test ICARUS.UnitTests
+dotnet test ICARUS.IntegrationTests   # requiere Docker (Testcontainers.MsSql)
+```
+
+### 5.6. ARGOS (reconocimiento facial)
+
+```bash
+cd MICROSERVICIOS/ARGOS
+pip install -r requirements.txt
+python runserver.py      # http://0.0.0.0:5000 ; precarga el modelo ArcFace
 ```
 
 ---
 
-## 📂 Estructura de Carpetas
+## 6. Convenciones globales (para humanos y agentes)
 
-```
-DocumentacionProyectos/ICARUS/     ← DOCUMENTACIÓN CENTRALIZADA
-├── README.md                      ← Este archivo
-├── diagramas/                     
-│   ├── clases.md                  ← Diagramas de clases Mermaid
-│   ├── secuencia.md               ← Diagramas de secuencia
-│   └── estado.md                  ← Diagramas de estado
-├── modulos/                       ← (Pendiente: docs por módulo)
-├── api/                           ← (Pendiente: docs API)
-├── 00-RESUMEN-EJECUTIVO-ARQUITECTURA.md
-├── 01-DOMAIN-ENTIDADES.md
-├── 02-APPLICATION-CQRS.md
-├── ... (documentos técnicos)
-└── SISTEMA-*.md                   ← Sistemas específicos
-
-ICARUS/ (Proyecto Principal)       ← SIN DOCUMENTACIÓN (limpio)
-├── ICARUS.Domain/
-├── ICARUS.Application/
-├── ICARUS.Infrastructure/
-├── ICARUS.API/
-└── ICARUS.Web/
-```
+- **Idioma del dominio:** español (entidades, propiedades y rutas en español).
+- **Entidad base:** toda entidad hereda de `BaseEntity` (`Id`, `FechaCreacion`, `FechaModificacion`, `CreadoPor`, `ModificadoPor`, `EstaActivo`).
+- **Soft delete:** nunca `Remove()` físico; se marca `EstaActivo = false`.
+- **Audit trail:** `ApplicationDbContext.SaveChangesAsync` rellena `FechaCreacion` / `FechaModificacion` automáticamente.
+- **Respuestas:** los handlers devuelven `OperationResult<T>` (no lanzan excepciones para errores de negocio).
+- **Logging:** `log4net` en todos los proyectos (`ILoggingService` / `LogManager`).
+- **CQRS:** Commands escriben, Queries leen; ambos viajan por `IMediator.Send(...)`.
+- **Validación:** FluentValidation + `ValidationBehavior` en el pipeline de MediatR.
 
 ---
 
-## 🔍 Casos de Uso Principales
+## 7. Deuda técnica detectada (en el código real, no inventada)
 
-### 1. Login Trabajador Móvil
-[Ver flujo completo](07-FLUJOS-NEGOCIO.md#flujo-1-login-de-trabajador-móvil)
+Hallazgos verificados contra el código fuente al 2026-06-29. No bloquean el funcionamiento, pero conviene
+limpiarlos. Un agente que trabaje el código debe tenerlos presentes para no duplicar ni romper.
 
-```
-Mobile LoginPage → AuthenticationService → API /mobile/auth/login 
-→ LoginTrabajadorCommandHandler → Repository → SQL Server
-→ JWT Token generado → SecureStorage
-```
+| # | Hallazgo | Ubicación real |
+|---|----------|----------------|
+| 1 | Features con nombre solapado: `Cliente` **y** `Clientes` | `ICARUS.Application/Features/Cliente/`, `.../Clientes/` |
+| 2 | Features con nombre solapado: `Trabajador`, `Trabajadores` y `TrabajadorMobileAuth` | `ICARUS.Application/Features/Trabajador*/` |
+| 3 | Tres archivos `JwtTokenService.cs` (1 en Application, 2 en Infrastructure) | `ICARUS.Application/Services/Auth/`, `ICARUS.Infrastructure/Services/Auth/`, `ICARUS.Infrastructure/Services/` |
+| 4 | Controllers Web casi homónimos: `ProgramaVacunacionController` (singular) y `ProgramasVacunacionController` (plural) | `ICARUS.Web/Areas/GestionAvicola/Controllers/` |
+| 5 | Repositorio residual con sufijo `_fixed` | `ICARUS.Infrastructure/Repositories/ControlAcceso/TrabajadorAccesoRepository_fixed.cs` |
+| 6 | 3 pares de `DbSet<>` duplicados con nombre alterno (40 propiedades para 37 entidades): Cronograma{Vacunacion,Iluminacion,Alimentacion} singular vs plural | `ICARUS.Infrastructure/Data/ApplicationDbContext.cs` |
+| 7 | Implementación `DatosBiometricosService` deshabilitada como `.bak` (solo activa la interfaz) | `ICARUS.Application/Services/DatosBiometricosService.cs.bak` |
+| 8 | Controller Web `ControlAccesoController` existe tanto en `Controllers/` base como en `Areas/ControlAcceso/Controllers/` | `ICARUS.Web/Controllers/`, `ICARUS.Web/Areas/ControlAcceso/Controllers/` |
 
-### 2. Crear Registro de Producción Diaria
-[Ver flujo completo](07-FLUJOS-NEGOCIO.md#flujo-2-crear-registro-de-producción-diaria)
-
-```
-Mobile CrearRegistroProduccionPage → POST /mobile/registro-produccion
-→ CreateRegistroProduccionDiarioCommand → Handler → Repository
-→ INSERT INTO RegistroProduccionDiario → Confirmation
-```
-
-### 3. Crear Programa de Vacunación (Web)
-[Ver flujo completo](07-FLUJOS-NEGOCIO.md#flujo-3-crear-programa-de-vacunación-web)
-
-```
-Web /GestionAvicola/ProgramaVacunacion/Crear → Controller
-→ CreateProgramaVacunacionCommand → Handler → Repositories
-→ INSERT ProgramaVacunacion + CronogramaVacunacion (batch)
-```
-
----
-
-## 🐛 Debugging y Troubleshooting
-
-### Logs
-
-**Ubicación**:
-- API: `ICARUS.API/Logs/log4net.log`
-- Web: `ICARUS.Web/Logs/log4net.log`
-- Mobile: `ICARUS_MOBILE/LogsMobile/emulator_log.txt`
-
-**Formato log4net**:
-```
-[2024-12-31 10:30:45] INFO - ClassName.MethodName - Mensaje con contexto
-```
-
-### Errores Comunes
-
-| Error | Causa | Solución |
-|-------|-------|----------|
-| 401 Unauthorized (API) | JWT expirado | Re-login desde mobile |
-| 500 Internal Server Error | Validación fallida | Revisar logs, validar inputs |
-| EF Core DbUpdateException | Constraint violado | Verificar FK, UNIQUE, CHECK |
-| NullReferenceException | Falta validación defensiva | Agregar `if (obj == null)` |
-
----
-
-## 🧪 Testing
-
-**Estado Actual**: No hay tests implementados (0% cobertura)
-
-**Recomendación**: Ver [08-CONSOLIDACION-REFACTORIZACION.md → Métricas de Calidad](08-CONSOLIDACION-REFACTORIZACION.md#métricas-de-calidad-de-código)
-
-**Plan Sugerido**:
-1. Domain entities (validaciones) → Target 80%
-2. Application handlers → Target 70%
-3. Repositories → Target 50%
-
----
-
-## 🚧 Roadmap de Mejoras
-
-Ver documento completo: [08-CONSOLIDACION-REFACTORIZACION.md → Roadmap](08-CONSOLIDACION-REFACTORIZACION.md#roadmap-de-implementación)
-
-### Fase 1: Estabilización (1-2 meses)
-- ✅ Documentación completa
-- ⏳ Implementar unit tests (Domain + Application)
-- ⏳ Consolidar DTOs/ViewModels
-- ⏳ Response caching en API
-
-### Fase 2: Optimización (3-4 meses)
-- ⏳ Migrar a .NET 9
-- ⏳ Distributed cache (Redis)
-- ⏳ Optimizar queries N+1
-- ⏳ CQRS puro con eventos
-
-### Fase 3: Modernización (5-6 meses)
-- ⏳ Separar BD lectura/escritura
-- ⏳ Identity Server (autenticación unificada)
-- ⏳ Considerar microservicios (si aplica)
-
----
-
-## 👥 Equipo y Contribución
-
-### Roles Sugeridos
-
-- **Tech Lead/Arquitecto**: Decisiones arquitectónicas, code reviews
-- **Backend Developers**: ICARUS.API + Application + Infrastructure
-- **Frontend Developers**: ICARUS.Web (Razor + JavaScript)
-- **Mobile Developers**: ICARUS_MOBILE (.NET MAUI)
-- **DevOps**: CI/CD, deployment, monitoring
-- **QA**: Testing manual + automatizado
-
-### Convenciones de Código
-
-Ver archivo raíz: [.github/copilot-instructions.md](../.github/copilot-instructions.md)
-
-**Resumen**:
-- NUNCA usar `var` para tipos built-in
-- SIEMPRE usar `this.` para calificar miembros
-- NUNCA usar Try-Catch sin validaciones previas
-- Logging obligatorio con `NombreClase.NombreMetodo - Mensaje`
-- Nombres en inglés, comentarios en español
-
----
-
-## 📞 Contacto y Soporte
-
-**Repositorios**:
-- Backend/Web: `luicahleo/ICARUS`
-- Mobile: `luicahleo/ICARUS_MOBILE`
-
-**Documentación Externa**:
-- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [CQRS Pattern](https://docs.microsoft.com/en-us/azure/architecture/patterns/cqrs)
-- [MediatR GitHub](https://github.com/jbogard/MediatR)
-- [.NET MAUI Docs](https://docs.microsoft.com/en-us/dotnet/maui/)
-
----
-
-## 📝 Historial de Cambios
-
-| Versión | Fecha | Cambios |
-|---------|-------|---------|
-| **1.0** | Dic 2025 | Documentación inicial completa (9 documentos, 193 páginas) |
-
----
-
-## ✅ Checklist de Onboarding
-
-Para nuevos desarrolladores:
-
-- [ ] Leer [00-RESUMEN-EJECUTIVO-ARQUITECTURA.md](00-RESUMEN-EJECUTIVO-ARQUITECTURA.md)
-- [ ] Configurar entorno local (SQL Server + .NET 8 SDK)
-- [ ] Clonar repositorios ICARUS + ICARUS_MOBILE
-- [ ] Aplicar migraciones EF Core (`dotnet ef database update`)
-- [ ] Ejecutar ICARUS.API y validar Swagger en `/swagger`
-- [ ] Ejecutar ICARUS.Web y login con usuario admin
-- [ ] Compilar ICARUS_MOBILE y ejecutar en emulador Android
-- [ ] Leer [07-FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md) (casos de uso)
-- [ ] Revisar [08-CONSOLIDACION-REFACTORIZACION.md](08-CONSOLIDACION-REFACTORIZACION.md) (mejoras)
-- [ ] Hacer primer commit siguiendo convenciones
-
----
-
-## 🎉 Conclusión
-
-Este sistema ICARUS es un **ejemplo sólido de Clean Architecture en .NET 8**, con:
-
-✅ Separación clara de responsabilidades  
-✅ CQRS funcionando correctamente  
-✅ Dos clientes (Web + Mobile) operativos  
-✅ Documentación completa y actualizada  
-
-**Próximo paso**: Implementar testing y optimizaciones según roadmap.
-
-**¡Bienvenido al equipo ICARUS!** 🚀
-
----
-
-**Documentación generada**: Diciembre 2025  
-**Versión**: 1.0  
-**Mantenedores**: Equipo de Desarrollo ICARUS  
-**Licencia**: Propietaria
+> El módulo de Fumigación/Agricultura que aparecía en documentación previa (`Campo`, cultivos) **no existe
+> en el código** (cero referencias en Domain/Application/API/Web); por eso se eliminó esa documentación.

@@ -1,12 +1,17 @@
 # Guía para Consultar Base de Datos SQLite de IMCA
 
+**Última actualización:** 2026-06-29 — validado contra código fuente
+
 Esta guía explica cómo extraer la base de datos SQLite de IMCA desde un dispositivo Android y consultarla.
+
+> La app IMCA usa **.NET 10**. La herramienta de consulta `DbQuery` es un proyecto de
+> consola aparte sobre **.NET 8** (`net8.0`), fuera de la solución `IMCA.slnx`.
 
 ## Requisitos
 
 - Dispositivo Android conectado por USB con depuración habilitada
 - Android SDK con ADB instalado (viene con Visual Studio)
-- .NET 8+ SDK instalado
+- .NET 8+ SDK instalado (para ejecutar la herramienta `DbQuery`)
 
 ## Paso 1: Extraer Base de Datos del Dispositivo
 
@@ -88,6 +93,18 @@ CREATE TABLE "Trabajadores" (
 ```powershell
 & "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" shell "run-as com.icarus.mobile ls -la files/"
 ```
+
+## Tablas de la base de datos (5)
+
+| Tabla | Contenido |
+|-------|-----------|
+| `Dispositivos` | Dispositivo IMCA registrado |
+| `Supervisores` | Supervisor autenticado + token JWT |
+| `Trabajadores` | Trabajadores (embeddings faciales, huella simulada, fotos) |
+| `ConfiguracionApp` | Estado del modo kiosco y config local |
+| `RegistroLocal` | Fichajes de Entrada/Salida (offline-first) |
+
+Esquema completo de cada tabla: ver `02-MODELO-DATOS.md`.
 
 ## Consultas SQL Útiles
 

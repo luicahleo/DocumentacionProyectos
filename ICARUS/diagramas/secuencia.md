@@ -1,93 +1,82 @@
-# Diagramas de Secuencia - ICARUS
+# Diagramas de Secuencia — ICARUS
 
-## Flujo de Autenticación
+**Última actualización:** 2026-06-29 — validado contra código fuente
+
+> Reflejan el comportamiento real: la **Web autentica con Identity local** (no llama a la API),
+> la **móvil usa la API con JWT**, y el **reconocimiento facial pasa por ARGOS**.
+
+## 1. Login en ICARUS.Web (Identity local, sin API)
 
 ```mermaid
 sequenceDiagram
     actor Usuario
-    participant Web as ICARUS.Web
-    participant API as ICARUS.API
+    participant Web as ICARUS.Web (MVC)
+    participant Id as ASP.NET Identity
     participant DB as SQL Server
-    participant Identity as ASP.NET Identity
-    
-    Usuario->>Web: Login (email, password)
-    Web->>Identity: ValidateCredentials()
-    Identity->>DB: Query User
-    DB-->>Identity: User data
-    Identity-->>Web: Claims + Token
-    Web-->>Usuario: Redirect to Dashboard
+
+    Usuario->>Web: POST /Identity/Account/Login
+    Web->>Id: SignInManager.PasswordSignInAsync
+    Id->>DB: AspNetUsers / roles
+    DB-->>Id: usuario + claims
+    Id-->>Web: cookie de sesión
+    Web-->>Usuario: redirección al dashboard
 ```
 
-## Flujo de Control de Acceso (Reconocimiento Facial)
+## 2. Login móvil (JWT contra la API)
 
 ```mermaid
 sequenceDiagram
     actor Trabajador
-    participant Mobile as IMCA App
+    participant App as ICARUS_MOBILE
     participant API as ICARUS.API
-    participant Argos as ARGOS
+    participant H as LoginHandler
     participant DB as SQL Server
-    
-    Trabajador->>Mobile: Captura foto
-    Mobile->>API: POST /api/acceso/verificar
-    API->>Argos: POST /verify-face
-    Argos->>Argos: Extract embedding
-    Argos->>API: Return embedding
-    API->>DB: Query DatosBiometricos
-    DB-->>API: Stored embeddings
-    API->>API: Compare similarity
-    
-    alt Confianza >= 0.7
-        API->>DB: INSERT RegistroAcceso (Autorizado)
-        API-->>Mobile: ✅ Acceso Permitido
-        Mobile-->>Trabajador: Puerta abierta
-    else Confianza < 0.7
-        API->>DB: INSERT RegistroAcceso (Denegado)
-        API-->>Mobile: ❌ Acceso Denegado
-        Mobile-->>Trabajador: Acceso rechazado
-    end
+
+    Trabajador->>App: credenciales
+    App->>API: POST api/mobile/auth/login
+    API->>H: IMediator.Send(LoginCommand)
+    H->>DB: valida Trabajador
+    DB-->>H: ok
+    H-->>API: OperationResult { accessToken, refreshToken }
+    API-->>App: 200 OK (JWT en SecureStorage)
 ```
 
-## Flujo de Registro de Producción Avícola
+## 3. Registro de producción (CQRS)
 
 ```mermaid
 sequenceDiagram
-    actor Operario
-    participant Mobile as IMGA App
-    participant API as ICARUS.API
+    actor Galponero
+    participant App as IMGA
+    participant API as RegistroProduccionMobileController
+    participant V as ValidationBehavior
+    participant H as CreateRegistroProduccionDiarioCommandHandler
     participant DB as SQL Server
-    
-    Operario->>Mobile: Nuevo registro producción
-    Mobile->>Mobile: Validar datos
-    Mobile->>API: POST /api/gestionavicola/produccion
-    API->>API: Validate business rules
-    API->>DB: INSERT RegistroProduccionDiario
-    DB-->>API: Success
-    API->>API: Calcular estadísticas
-    API-->>Mobile: Registro guardado + resumen
-    Mobile-->>Operario: Confirmación
+
+    App->>API: POST api/mobile/registro-produccion (JWT)
+    API->>V: IMediator.Send(command)
+    V->>H: válido → Handle
+    H->>DB: crea RegistroProduccionDiario (+ mortalidad)
+    DB-->>H: commit (audit trail)
+    H-->>API: OperationResult<Dto>
+    API-->>App: 200 OK
 ```
 
-## Flujo de Asignación de Módulos
+## 4. Control de acceso facial (IMCA → ARGOS → API)
 
 ```mermaid
 sequenceDiagram
-    actor Admin
-    participant Web as ICARUS.Web
-    participant API as ICARUS.API
+    actor Persona
+    participant IMCA as IMCA (kiosco)
+    participant ARGOS as ARGOS (Python)
+    participant API as IMCAController
     participant DB as SQL Server
-    
-    Admin->>Web: Asignar módulo a cliente
-    Web->>API: POST /api/clientemodulos
-    API->>DB: Check existing assignment
-    
-    alt Ya asignado
-        API-->>Web: Error: Ya existe
-        Web-->>Admin: Mensaje error
-    else No asignado
-        API->>DB: INSERT ClienteModulo
-        DB-->>API: Success
-        API-->>Web: Módulo asignado
-        Web-->>Admin: Confirmación
-    end
+
+    Persona->>IMCA: rostro
+    IMCA->>ARGOS: imagen
+    ARGOS->>ARGOS: ArcFace → embedding (512)
+    ARGOS-->>IMCA: embedding / identidad
+    IMCA->>API: POST api/imca/registros/crear (JWT)
+    API->>DB: compara DatosBiometricos, registra RegistroAcceso
+    DB-->>API: resultado
+    API-->>IMCA: ResultadoAcceso
 ```
