@@ -1,279 +1,131 @@
-# ICARUS - Resumen Ejecutivo de Arquitectura
+# ICARUS — Resumen Ejecutivo de Arquitectura
 
-**Fecha:** Diciembre 2025  
-**Versión:** 1.0  
-**Tecnología:** .NET 8 / .NET MAUI
-
----
-
-## 🎯 Visión General
-
-**ICARUS** es una plataforma de gestión empresarial modular construida con Clean Architecture, compuesta por:
-- **Backend API** (ASP.NET Core Web API con JWT)
-- **Frontend Web** (ASP.NET Core MVC con Razor Pages)
-- **App Móvil** (MAUI con MVVM)
+**Última actualización:** 2026-06-29 — validado contra código fuente
+**Tecnología backend:** .NET 10 / ASP.NET Core 10 · EF Core 10 · SQL Server
+**App móvil:** .NET MAUI (ICARUS_MOBILE — repositorio aparte)
+**Microservicio facial:** Python 3.9 + Flask + DeepFace/ArcFace (ARGOS)
 
 ---
 
-## 📦 Estructura de Soluciones
+## 1. Visión general
 
-### ICARUS (Backend/Web)
-```
-ICARUS/
-├── ICARUS.Domain/          # Entidades, interfaces, enums (sin dependencias)
-├── ICARUS.Application/     # CQRS (MediatR), DTOs, handlers, validadores
-├── ICARUS.Infrastructure/  # EF Core, repositorios, DbContext, migraciones
-├── ICARUS.API/            # Web API REST + JWT + Swagger
-└── ICARUS.Web/            # MVC Razor + Areas + ViewModels
-```
+ICARUS es una plataforma de gestión empresarial **modular y multi-tenant** construida con
+**Clean Architecture**. Componentes:
 
-### ICARUS_MOBILE (App Móvil)
-```
-ICARUS_MOBILE/
-├── Core/                  # Autenticación, logging, servicios compartidos
-├── Modules/               # GestionAvicola, ControlAcceso (MVVM)
-├── Converters/            # Value converters XAML
-└── Platforms/             # Código específico Android/iOS
-```
+- **ICARUS.API** — Web API REST con JWT (consumida por las apps móviles y los kioscos biométricos).
+- **ICARUS.Web** — ASP.NET Core MVC (Razor + Bootstrap + ASP.NET Identity) para administración y gestión.
+- **ICARUS_MOBILE** — apps .NET MAUI: **IMGA** (gestión avícola) e **IMCA** (control de acceso).
+- **ARGOS** — microservicio Python de reconocimiento facial.
 
 ---
 
-## 🏗️ Arquitectura Clean Architecture
+## 2. Diagrama de capas (Clean Architecture)
 
-### Flujo de Dependencias
-```
-┌─────────────────────────────────────────┐
-│          ICARUS.API / ICARUS.Web        │ ← Presentation Layer
-│         (Controllers + Views)           │
-└───────────────────┬─────────────────────┘
-                    ↓ depende de
-┌───────────────────▼─────────────────────┐
-│         ICARUS.Application              │ ← Application Layer
-│    (Commands, Queries, Handlers, DTOs)  │
-└───────────────────┬─────────────────────┘
-                    ↓ depende de
-┌───────────────────▼─────────────────────┐
-│           ICARUS.Domain                 │ ← Domain Layer
-│    (Entidades, Interfaces, Enums)       │
-└───────────────────▲─────────────────────┘
-                    ↑ implementa
-┌───────────────────┴─────────────────────┐
-│       ICARUS.Infrastructure             │ ← Infrastructure Layer
-│  (EF Core, Repos, DbContext, Auth)      │
-└─────────────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph Presentation
+        API["ICARUS.API<br/>Controllers REST + JWT"]
+        Web["ICARUS.Web<br/>Controllers MVC + Identity"]
+    end
+    App["ICARUS.Application<br/>Commands · Queries · Handlers · DTOs · Validators · AutoMapper"]
+    Dom["ICARUS.Domain<br/>Entities · Enums · Interfaces"]
+    Infra["ICARUS.Infrastructure<br/>EF Core · ApplicationDbContext · Repositorios · UnitOfWork"]
+    DB[("SQL Server · ICARUSDB")]
+
+    API --> App
+    Web --> App
+    Web -.->|usa ApplicationDbContext directo| Infra
+    App --> Dom
+    Infra -->|implementa interfaces| Dom
+    Infra --> DB
 ```
 
-**Regla de oro:** Las capas internas NO conocen las externas.
+**Regla de oro:** las capas internas (Domain) no dependen de las externas. Infrastructure implementa las
+interfaces declaradas en Domain. (Variante pragmática: `ICARUS.Web` accede a `ApplicationDbContext`
+directamente además de a través de MediatR.)
 
 ---
 
-## 📊 Módulos Funcionales
+## 3. Stack técnico real
 
-### 1. Gestión Avícola
-**Propósito:** Control de granjas, galpones, producción de huevos, mortalidad, vacunación
-
-**Entidades principales:**
-- `GestorAvicola` (Granja)
-- `Galpon` (Galpón con gallinas)
-- `RegistroProduccionDiario` (Huevos producidos por día)
-- `RegistroMortalidad` (Control de bajas)
-- `ProgramaVacunacion` + `CronogramaVacunacion`
-
-### 2. Control de Acceso
-**Propósito:** Gestión de acceso físico con biométricos, turnos, zonas
-
-**Entidades principales:**
-- `TrabajadorAcceso` (Empleados con acceso)
-- `RegistroAcceso` (Entradas/salidas)
-- `DatosBiometricos` (Huella digital)
-- `ZonaAcceso` (Áreas restringidas)
-- `PoliticaAcceso` (Reglas de acceso)
-
-### 3. Core (Compartido)
-**Propósito:** Funcionalidad transversal
-
-**Entidades principales:**
-- `Cliente` (Empresa/organización)
-- `Trabajador` (Empleado)
-- `Modulo` (Módulos del sistema)
-- `ClienteModulo` / `TrabajadorModulo` (Permisos)
+| Capa / Proyecto | Tecnologías y versiones |
+|-----------------|-------------------------|
+| `ICARUS.Domain` | C# / .NET 10, sin dependencias externas |
+| `ICARUS.Application` | MediatR **12.5.0**, AutoMapper **12.0.1**, FluentValidation **12.0.0**, ClosedXML 0.105.0, SixLabors.ImageSharp 3.1.12, log4net 3.1.0 |
+| `ICARUS.Infrastructure` | EF Core **10.0.0** (`Microsoft.EntityFrameworkCore.SqlServer`), Identity.EntityFrameworkCore 10.0.0, log4net 3.1.0 |
+| `ICARUS.API` | ASP.NET Core 10, `JwtBearer` 10.0.0, `System.IdentityModel.Tokens.Jwt` 8.1.0, Swashbuckle **8.0.0** |
+| `ICARUS.Web` | ASP.NET Core MVC 10, Razor, Bootstrap 5, jQuery, Identity.UI 10.0.0, ClosedXML |
+| Tests | xUnit 2.9.3, Moq 4.20.72, FluentAssertions 8.8.0, Testcontainers.MsSql 4.4.0, EF InMemory 10.0.0 |
+| `ARGOS` | Python 3.9, Flask, flask-cors, DeepFace (ArcFace), tf-keras, opencv-python, numpy, pillow |
 
 ---
 
-## 🔐 Autenticación
+## 4. Módulos funcionales
 
-### ICARUS.API (JWT)
-```
-POST /api/auth/login
-{
-  "email": "user@example.com",
-  "password": "pass123"
-}
+### 4.1. Gestión Avícola (`Entities/GestionAvicola/`, 24 archivos)
 
-Response:
-{
-  "accessToken": "eyJhbGc...",
-  "refreshToken": "guid...",
-  "expiration": "2025-12-15T10:00:00Z"
-}
-```
+- **Producción**: `GestorAvicola` (granja) → `Galpon` → `RegistroProduccionDiario`, `RegistroMortalidad`.
+- **Cronogramas y tareas**: `ProgramaVacunacion`/`CronogramaVacunacion`, `CronogramaIluminacion`,
+  `CronogramaAlimentacion`, y sus tareas por galpón `GalponTareaVacunacion/Iluminacion/Alimentacion`.
+- **Comercial / Contabilidad** (subdominio): `DespachoHuevo` + `DetalleDespachoHuevo`,
+  `PedidoAlimento` + `DetallePedidoAlimento`, `PrecioHuevo`, `PrecioAlimento`,
+  `PublicacionPrecioHuevo`, `PublicacionPrecioAlimento`, `BalanceCuenta`, `GestorCiclo`.
 
-### ICARUS.Web (Cookie + Identity)
-- Usa ASP.NET Core Identity
-- Cookies de sesión
-- Roles y Claims
+### 4.2. Control de Acceso (`Entities/ControlAcceso/`, 9 archivos)
 
-### ICARUS_MOBILE (JWT)
-- Consume ICARUS.API
-- Tokens en `SecureStorage`
-- Refresh automático
+`TrabajadorAcceso`, `RegistroAcceso`, `DatosBiometricos` (huella + embedding facial), `ZonaAcceso`,
+`NotificacionAcceso`, `AlertaSeguridad`, `PoliticaAcceso`, `PoliticaZona`, **`Dispositivo`** (kiosco/terminal).
+
+### 4.3. Core / compartido (`Entities/` raíz)
+
+`Cliente`, `Trabajador`, `Modulo`, `ClienteModulo`, `TrabajadorModulo`, `UserModulo`, `RefreshToken`,
+`MobileAppVersion`.
 
 ---
 
-## 💾 Base de Datos
+## 5. Autenticación
 
-**Motor:** SQL Server (LocalDB: `LUISCAHUANA\SQLEXPRESS`)  
-**Base de Datos:** `ICARUSDB`
-
-### Características:
-- **Code-First** con Entity Framework Core
-- **Fluent API** en `EntityConfigurations/`
-- **Migraciones** automáticas
-- **Soft Delete** (`EstaActivo` en `BaseEntity`)
-- **Audit Trail** (`FechaCreacion`, `CreadoPor`, etc.)
+| Aplicación | Mecanismo |
+|------------|-----------|
+| **ICARUS.API** | JWT Bearer. `appsettings` sección `JwtSettings` (Issuer `ICARUS.API`, Audience `ICARUS_MOBIL`, expiración 12 h, refresh 30 días). Login en `api/mobile/auth/login` e `api/imca/auth/login`. |
+| **ICARUS.Web** | ASP.NET Identity (cookies). `AddDefaultIdentity<IdentityUser>` + `AddRoles<IdentityRole>`. También configura JwtBearer para escenarios mixtos. |
+| **ICARUS_MOBILE** | JWT consumido desde la API; token en `SecureStorage`. |
 
 ---
 
-## 🔄 Patrones Implementados
+## 6. Patrones implementados
 
-### CQRS con MediatR
-```csharp
-// Command (escritura)
-public class CreateGalponCommand : IRequest<OperationResult<GalponDto>>
-
-// Query (lectura)
-public class GetGalponesQuery : IRequest<OperationResult<List<GalponDto>>>
-
-// Handler
-public class CreateGalponHandler : IRequestHandler<CreateGalponCommand, OperationResult<GalponDto>>
-```
-
-### Repository Pattern
-```csharp
-// Interfaz en Domain
-public interface IGalponRepository : IGenericRepository<Galpon>
-
-// Implementación en Infrastructure
-public class GalponRepository : GenericRepository<Galpon>, IGalponRepository
-```
-
-### MVVM (Móvil)
-```csharp
-// ViewModel
-public partial class CrearRegistroViewModel : ObservableObject
-{
-    [ObservableProperty]
-    private int cantidadMaples;
-    
-    [RelayCommand]
-    private async Task GuardarRegistro()
-}
-
-// View (XAML)
-<Entry Text="{Binding CantidadMaples}" />
-<Button Command="{Binding GuardarRegistroCommand}" />
-```
+- **Clean Architecture** (4 capas + tests).
+- **CQRS con MediatR**: `IRequest` / `IRequestHandler`, `IMediator.Send(...)`.
+- **Repository + Unit of Work**: interfaces en `Domain/Interfaces`, implementación en `Infrastructure/Repositories`.
+- **OperationResult\<T\>**: wrapper uniforme de éxito/error.
+- **Pipeline behavior**: `ValidationBehavior` (FluentValidation) en el pipeline de MediatR.
+- **Soft delete + audit trail** en `BaseEntity` + `ApplicationDbContext`.
 
 ---
 
-## 🚀 Tecnologías Clave
+## 7. Base de datos
 
-| Capa/Proyecto | Tecnologías |
-|--------------|-------------|
-| **ICARUS.Domain** | C# 12, .NET 8 |
-| **ICARUS.Application** | MediatR, FluentValidation, AutoMapper |
-| **ICARUS.Infrastructure** | EF Core 8, SQL Server, Identity |
-| **ICARUS.API** | ASP.NET Core 8, JWT, Swagger/OpenAPI |
-| **ICARUS.Web** | ASP.NET Core MVC, Razor, Bootstrap, jQuery |
-| **ICARUS_MOBILE** | .NET MAUI, CommunityToolkit.Mvvm, SecureStorage |
+- **Motor:** SQL Server (dev: contenedor `mcr.microsoft.com/mssql/server:2022-latest`, puerto 1433).
+- **Base:** `ICARUSDB`.
+- **Enfoque:** Code-First, EF Core 10, **una sola migración consolidada** (`InitialCreate`).
+- **DbContext:** `ICARUS.Infrastructure/Data/ApplicationDbContext.cs` (40 propiedades `DbSet<>` para 37 entidades, hereda de `IdentityDbContext`).
 
 ---
 
-## 📱 Flujo Completo (Ejemplo: Registro de Producción)
+## 8. Mapa de código (alto nivel)
 
-### Móvil → API → Base de Datos
+| Concepto | Ruta |
+|----------|------|
+| Entidades de dominio | `ICARUS.Domain/Entities/` |
+| Interfaces de repositorio | `ICARUS.Domain/Interfaces/` |
+| Commands / Queries / Handlers | `ICARUS.Application/Features/<Modulo>/` |
+| Behavior de validación | `ICARUS.Application/Behaviors/ValidationBehavior.cs` |
+| DbContext y repositorios | `ICARUS.Infrastructure/Data/`, `ICARUS.Infrastructure/Repositories/` |
+| Controllers REST | `ICARUS.API/Controllers/` |
+| Arranque API | `ICARUS.API/Program.cs` |
+| Controllers/Areas MVC | `ICARUS.Web/Controllers/`, `ICARUS.Web/Areas/` |
+| Arranque Web | `ICARUS.Web/Program.cs` |
+| Microservicio facial | `MICROSERVICIOS/ARGOS/` |
 
-```
-1. Usuario (Galponero) en app móvil:
-   CrearRegistroProduccionPage.xaml
-   ↓ binding
-   CrearRegistroProduccionViewModel
-   ↓ IRegistroProduccionService
-   
-2. HTTP POST → ICARUS.API:
-   POST /api/mobile/gestionavicola/produccion
-   ↓ [Authorize(JWT)]
-   RegistroProduccionController
-   ↓ IMediator.Send()
-   
-3. Application Layer:
-   CreateRegistroProduccionCommand
-   ↓ CreateRegistroProduccionCommandHandler
-   ↓ Validaciones (FluentValidation)
-   ↓ IRegistroProduccionRepository
-   
-4. Infrastructure Layer:
-   RegistroProduccionRepository
-   ↓ ApplicationDbContext (EF Core)
-   ↓ SQL Server
-   
-5. Response ← API ← Móvil:
-   OperationResult<RegistroProduccionDto>
-   ↓ Actualiza ObservableCollection
-   ↓ UI actualizada
-```
-
----
-
-## 📈 Métricas del Proyecto
-
-### ICARUS (Backend/Web)
-- **Proyectos:** 5
-- **Entidades Domain:** ~30
-- **Commands:** ~96
-- **Queries:** ~74
-- **Controllers API:** ~15
-- **Views Razor:** ~80+
-- **Líneas de código:** ~50,000+
-
-### ICARUS_MOBILE
-- **Módulos:** 2 (GestionAvicola, ControlAcceso)
-- **ViewModels:** ~15
-- **Views XAML:** ~20
-- **Servicios:** ~10
-- **Líneas de código:** ~20,000+
-
----
-
-## 🔍 Próximos Documentos
-
-1. **01-DOMAIN-ENTIDADES.md** - Detalle de todas las entidades
-2. **02-APPLICATION-CQRS.md** - Commands, Queries, Handlers
-3. **03-INFRASTRUCTURE-REPOSITORIOS.md** - EF Core, Migraciones
-4. **04-API-ENDPOINTS.md** - Todos los endpoints documentados
-5. **05-WEB-MVC.md** - Controllers, Views, ViewModels
-6. **06-MOBILE-ARQUITECTURA.md** - MAUI, MVVM, Servicios
-7. **07-FLUJOS-NEGOCIO.md** - Casos de uso completos
-
----
-
-## 📞 Información Adicional
-
-**Ubicación Física:**
-- Backend/Web: `C:\Users\desarrollo\source\repos\NETCORE\ICARUS`
-- Móvil: `C:\Users\desarrollo\source\repos\NETMAUI\ICARUS_MOBILE`
-
-**Convenciones:**
-- Ver `.github/copilot-instructions.md` para reglas de estilo
-- Ver `.editorconfig` para configuraciones
-- Log4net para logging en todos los proyectos
+Siguiente: **01-DOMAIN-ENTIDADES.md**.

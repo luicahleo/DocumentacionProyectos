@@ -1,9 +1,15 @@
 # 🔔 SISTEMA DE NOTIFICACIONES - API MOBILE
 
+> **Última actualización:** 2026-06-29 — revisado contra código fuente. **Corrección:** el controller real
+> se llama **`MobileNotificacionesController.cs`** (ruta base `api/mobile/notificaciones`), no
+> `NotificacionesMobileController.cs`. Endpoints reales: `GET /dia`, `GET /pendientes`,
+> `POST /vacunacion/completar`, `POST /iluminacion/activar`, `POST /iluminacion/completar`,
+> `POST /alimentacion/completar`, `POST /alimentacion/registrar`. Backend **.NET 10**.
+
 > **Documento de Referencia Técnica**  
 > **Fecha:** Octubre 2025  
 > **Versión:** 1.0  
-> **Controller:** `NotificacionesMobileController.cs`
+> **Controller:** `MobileNotificacionesController.cs`
 
 ---
 

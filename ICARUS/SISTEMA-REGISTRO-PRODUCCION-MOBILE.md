@@ -1,5 +1,10 @@
 # 📊 SISTEMA DE REGISTRO DE PRODUCCIÓN DIARIA - API MOBILE
 
+> **Última actualización:** 2026-06-29 — revisado contra código fuente. Backend **.NET 10 / EF Core 10**.
+> Controller real: `ICARUS.API/Controllers/Mobile/RegistroProduccionMobileController.cs`
+> (ruta base `api/mobile/registro-produccion`). Endpoints: `GET /galpones`, `POST /`, `GET /{id}`,
+> `GET /historial`, `PUT /{id}`, `DELETE /{id}`. Lógica en `ICARUS.Application/Features/GestionAvicola/`.
+
 > **Documento de Referencia Técnica**  
 > **Fecha:** Octubre 2025  
 > **Versión:** 1.0  

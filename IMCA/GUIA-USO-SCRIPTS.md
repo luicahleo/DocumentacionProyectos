@@ -1,6 +1,9 @@
 # Guía de Uso de Scripts
 
-Scripts de desarrollo y diagnóstico para IMCA.
+**Última actualización:** 2026-06-29 — validado contra código fuente
+
+Scripts de desarrollo y diagnóstico para IMCA. Las rutas son relativas a la raíz del repo de
+código (`C:\Users\lrcahuana\source\repos\dev\IMCA`).
 
 ## Scripts Disponibles
 

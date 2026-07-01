@@ -1,7 +1,7 @@
 # 📱 IMCA Kiosco - Contexto Técnico FaceID
 
-> **Última actualización**: 2026-01-15  
-> **Estado**: ✅ Validado en pruebas reales
+> **Última actualización:** 2026-06-29 — validado contra código fuente
+> **Estado**: ✅ Validado contra el código real (los umbrales y el flujo coinciden)
 
 ---
 
@@ -98,34 +98,38 @@ stateDiagram-v2
 
 ```mermaid
 erDiagram
-    TrabajadorLocal {
+    Trabajadores {
         int Id PK
         int TrabajadorApiId
         string Nombre
-        string Documento
-        byte[] FotoThumbnail
-        byte[] EmbeddingMobileFN
+        string NumeroDocumento
+        byte[] FaceEmbedding "ArcFace 512-dim (4096 bytes)"
+        byte[] FaceEmbeddingMobileFN "MobileFaceNet 128-dim (512 bytes)"
+        byte[] PlantillaBiometrica "huella SIMULADA"
     }
     
     RegistroLocal {
         int Id PK
-        int TrabajadorLocalId FK
+        int TrabajadorId
         DateTime FechaHora
-        string Tipo "Entrada|Salida"
+        string TipoRegistro "Entrada|Salida"
         bool Sincronizado
-        int IntentosSincronizacion
-        DateTime ProximoIntento
+        int IntentosSync
+        DateTime UltimoIntentoSync
         int RegistroIdBackend
     }
     
     EmbeddingsCache {
         int TrabajadorApiId PK
-        float[] Embedding "128 floats"
+        float[] Embedding "128 floats (MobileFaceNet)"
     }
     
-    TrabajadorLocal ||--o{ RegistroLocal : tiene
-    TrabajadorLocal ||--o| EmbeddingsCache : cached
+    Trabajadores ||--o{ RegistroLocal : tiene
+    Trabajadores ||--o| EmbeddingsCache : cached
 ```
+
+> Nombres reales de tabla/campo: ver `02-MODELO-DATOS.md`. La relación es lógica
+> (`TrabajadorApiId` ↔ `RegistroLocal.TrabajadorId`), sin FK declarada en SQLite.
 
 ---
 
@@ -161,7 +165,11 @@ flowchart LR
 - Intento 1: 2 min delay
 - Intento 2: 4 min delay  
 - Intento 3: 8 min delay
-- Máximo: 5 intentos
+- Máximo: 5 intentos (registros con `IntentosSync ≥ 5` se omiten)
+
+> ⚠️ **Timer de sincronización:** actualmente hardcodeado a **5 segundos (valor de PRUEBA)**
+> en `KioscoViewModel.IniciarTimerSincronizacion()`, con un `TODO` para pasarlo a 5 min
+> (300000 ms) en producción.
 
 ---
 
@@ -174,7 +182,7 @@ flowchart LR
 | `Core/Services/EmbeddingsCache.cs` | Cache + umbrales verificación |
 | `Core/Services/ArgosService.cs` | Cliente ARGOS (ArcFace) |
 | `Core/Services/SyncService.cs` | Sincronización con backoff |
-| `IMCA.Tests/` | 26 tests unitarios |
+| `IMCA.Tests/` | Tests de lógica pura (`EmbeddingsCacheTests`, `SyncServiceTests`) |
 
 ---
 

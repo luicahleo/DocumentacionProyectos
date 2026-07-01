@@ -1,5 +1,11 @@
 # 📋 SISTEMA DE NOTIFICACIONES - ICARUS
 
+> **Última actualización:** 2026-06-29 — revisado contra código fuente. Backend **.NET 10 / EF Core 10 /
+> SQL Server**. Implementado con CQRS (MediatR) en `ICARUS.Application/Features/GestionAvicola/` y expuesto
+> en `ICARUS.API/Controllers/Mobile/MobileNotificacionesController.cs` (`api/mobile/notificaciones/...`).
+> Tareas: `GalponTareaVacunacion/Iluminacion/Alimentacion` con `EstadoTarea` (Pendiente/Completada).
+> Ver [07-FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md) §6.
+
 > **Documento de Referencia Técnica**  
 > **Fecha:** Octubre 2025  
 > **Versión:** 1.0  
