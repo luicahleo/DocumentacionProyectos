@@ -1,9 +1,9 @@
 # ICARUS — Resumen Ejecutivo de Arquitectura
 
-**Última actualización:** 2026-06-29 — validado contra código fuente
+**Última actualización:** 2026-07-02 — validado contra código fuente
 **Tecnología backend:** .NET 10 / ASP.NET Core 10 · EF Core 10 · SQL Server
 **App móvil:** .NET MAUI (ICARUS_MOBILE — repositorio aparte)
-**Microservicio facial:** Python 3.9 + Flask + DeepFace/ArcFace (ARGOS)
+**Microservicio facial:** Python 3.9 + Flask + DeepFace/ArcFace (ARGOS — repositorio aparte, `dev/ARGOS`)
 
 ---
 
@@ -15,7 +15,8 @@ ICARUS es una plataforma de gestión empresarial **modular y multi-tenant** cons
 - **ICARUS.API** — Web API REST con JWT (consumida por las apps móviles y los kioscos biométricos).
 - **ICARUS.Web** — ASP.NET Core MVC (Razor + Bootstrap + ASP.NET Identity) para administración y gestión.
 - **ICARUS_MOBILE** — apps .NET MAUI: **IMGA** (gestión avícola) e **IMCA** (control de acceso).
-- **ARGOS** — microservicio Python de reconocimiento facial.
+- **ARGOS** — microservicio Python de reconocimiento facial. **Repositorio independiente** (`dev/ARGOS`),
+  se comunica con `ICARUS.API` únicamente por HTTP/REST. Ver [`../ARGOS/`](../ARGOS/README.md).
 
 ---
 
@@ -126,6 +127,6 @@ directamente además de a través de MediatR.)
 | Arranque API | `ICARUS.API/Program.cs` |
 | Controllers/Areas MVC | `ICARUS.Web/Controllers/`, `ICARUS.Web/Areas/` |
 | Arranque Web | `ICARUS.Web/Program.cs` |
-| Microservicio facial | `MICROSERVICIOS/ARGOS/` |
+| Microservicio facial | Repositorio independiente `dev/ARGOS` (ver [`../ARGOS/`](../ARGOS/README.md)) |
 
 Siguiente: **01-DOMAIN-ENTIDADES.md**.

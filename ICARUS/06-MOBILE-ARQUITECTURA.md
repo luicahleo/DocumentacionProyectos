@@ -34,7 +34,7 @@ relación se materializa en:
 | Autenticación / kiosco IMCA | `ICARUS.API/Controllers/Mobile/IMCAController.cs` | `IMCA/IMCA/Core/Services/AuthenticationService.cs` |
 | Registro de producción | `ICARUS.API/Controllers/Mobile/RegistroProduccionMobileController.cs` | `ICARUS_MOBILE/IMGA/Modules/GestionAvicola/...` |
 | Notificaciones de tareas | `ICARUS.API/Controllers/Mobile/MobileNotificacionesController.cs` | `ICARUS_MOBILE/IMGA/Modules/GestionAvicola/...` |
-| Reconocimiento facial | `MICROSERVICIOS/ARGOS/` + `IMCAController` | `IMCA/IMCA/Core/Services/{ArgosService,FaceRecognitionService}.cs` |
+| Reconocimiento facial | repo independiente `dev/ARGOS` + `IMCAController` | `IMCA/IMCA/Core/Services/{ArgosService,FaceRecognitionService}.cs` |
 
 Para arquitectura interna, modelos, sincronización offline, pruebas y diagramas de cada app, ir a sus
 respectivas carpetas de documentación ([IMGA](../IMGA/README.md) · [IMCA](../IMCA/README.md)).

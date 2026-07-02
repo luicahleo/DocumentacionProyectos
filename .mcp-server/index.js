@@ -222,7 +222,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         tools: [
             {
                 name: 'search_docs',
-                description: 'Busca texto en la documentación de proyectos Trajano (ICARUS, IMCA, IMGA)',
+                description: 'Busca texto en la documentación de proyectos Trajano (ICARUS, IMCA, IMGA, ARGOS)',
                 inputSchema: {
                     type: 'object',
                     properties: {
@@ -232,8 +232,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         },
                         project: {
                             type: 'string',
-                            description: 'Filtrar por proyecto: ICARUS, IMCA, o IMGA (opcional)',
-                            enum: ['ICARUS', 'IMCA', 'IMGA']
+                            description: 'Filtrar por proyecto: ICARUS, IMCA, IMGA o ARGOS (opcional)',
+                            enum: ['ICARUS', 'IMCA', 'IMGA', 'ARGOS']
                         }
                     },
                     required: ['query']
@@ -301,8 +301,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         project: {
                             type: 'string',
-                            description: 'Filtrar por proyecto: ICARUS, IMCA, o IMGA (opcional)',
-                            enum: ['ICARUS', 'IMCA', 'IMGA']
+                            description: 'Filtrar por proyecto: ICARUS, IMCA, IMGA o ARGOS (opcional)',
+                            enum: ['ICARUS', 'IMCA', 'IMGA', 'ARGOS']
                         }
                     }
                 }

@@ -152,6 +152,6 @@ Ver detalle en [SISTEMA-NOTIFICACIONES.md](SISTEMA-NOTIFICACIONES.md).
 | Login Web | `ICARUS.Web/Areas/Identity/` |
 | Login móvil | `ICARUS.API/Controllers/Mobile/MobileAuthController.cs` + `Features/TrabajadorMobileAuth/` |
 | Producción | `ICARUS.API/Controllers/Mobile/RegistroProduccionMobileController.cs` + `Features/GestionAvicola/` |
-| Acceso facial | `ICARUS.API/Controllers/Mobile/IMCAController.cs` + `MICROSERVICIOS/ARGOS/` |
+| Acceso facial | `ICARUS.API/Controllers/Mobile/IMCAController.cs` + repo independiente `dev/ARGOS` |
 | Despacho / Pedido | `ICARUS.API/Controllers/Mobile/{DespachoHuevo,PedidoAlimento}Controller.cs` + `Features/ContabilidadAvicola/` |
 | Notificaciones | `ICARUS.API/Controllers/Mobile/MobileNotificacionesController.cs` |

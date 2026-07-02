@@ -31,7 +31,7 @@ flowchart LR
         Mobile["ICARUS_MOBILE<br/>(MAUI: IMGA / IMCA)"]
     end
     API["ICARUS.API<br/>(REST + JWT + Swagger)"]
-    ARGOS["ARGOS<br/>(Python/Flask + DeepFace)"]
+    ARGOS["ARGOS<br/>(repo independiente · Python/Flask + DeepFace)"]
     DB[("SQL Server<br/>ICARUSDB")]
 
     Web -- "CQRS directo (MediatR)" --> DB
@@ -40,6 +40,10 @@ flowchart LR
     Mobile -- "captura facial" --> ARGOS
     ARGOS -- "embeddings / validación" --> API
 ```
+
+> **Nota (2026-07-02):** ARGOS ya **no** forma parte de este repositorio ni de `ICARUS.slnx`. Vive en su
+> propio repositorio git, `dev/ARGOS`, hermano de `ICARUS`. Su documentación está en
+> [`../ARGOS/`](../ARGOS/README.md). La integración entre ambos sigue siendo exclusivamente HTTP/REST.
 
 > **Importante:** `ICARUS.Web` **NO** consume `ICARUS.API`. La Web es una aplicación MVC que ejecuta
 > CQRS (MediatR) **directamente** sobre el mismo `ApplicationDbContext` y usa **ASP.NET Identity local
@@ -58,7 +62,9 @@ flowchart LR
 | `ICARUS.Web` | web | net10.0 | MVC + Razor + Bootstrap + ASP.NET Identity (admin/gestión) |
 | `ICARUS.UnitTests` | xunit | net10.0 | Tests unitarios (handlers, dominio, controllers) |
 | `ICARUS.IntegrationTests` | xunit | net10.0 | Tests E2E con WebApplicationFactory + Testcontainers (SQL real) |
-| `MICROSERVICIOS/ARGOS` | pyproj (Python) | Python 3.9 | Microservicio de reconocimiento facial (Flask + DeepFace/ArcFace) |
+
+> `ARGOS` (microservicio de reconocimiento facial) ya no es parte de esta solución; ver
+> [`../ARGOS/`](../ARGOS/README.md).
 
 Flujo de dependencias (regla Clean Architecture: las capas internas no conocen a las externas):
 
@@ -107,7 +113,6 @@ API / Web  →  Application  →  Domain  ←  Infrastructure (implementa interf
 | 05 | [05-WEB-MVC.md](05-WEB-MVC.md) | Areas, controllers, vistas, Identity, patrón CQRS-directo |
 | 06 | [06-MOBILE-ARQUITECTURA.md](06-MOBILE-ARQUITECTURA.md) | App MAUI (IMGA / IMCA), MVVM (referencia, fuera de este repo) |
 | 07 | [07-FLUJOS-NEGOCIO.md](07-FLUJOS-NEGOCIO.md) | Casos de uso end-to-end con diagramas de secuencia |
-| 11 | [11-ARGOS-RECONOCIMIENTO-FACIAL.md](11-ARGOS-RECONOCIMIENTO-FACIAL.md) | Microservicio Python de reconocimiento facial |
 | — | [SISTEMA-NOTIFICACIONES.md](SISTEMA-NOTIFICACIONES.md) | Detalle del sistema de notificaciones/tareas avícolas |
 | — | [SISTEMA-NOTIFICACIONES-MOBILE.md](SISTEMA-NOTIFICACIONES-MOBILE.md) | Notificaciones en la app móvil |
 | — | [SISTEMA-REGISTRO-PRODUCCION-MOBILE.md](SISTEMA-REGISTRO-PRODUCCION-MOBILE.md) | Registro de producción en la app móvil |
@@ -154,11 +159,8 @@ dotnet test ICARUS.IntegrationTests   # requiere Docker (Testcontainers.MsSql)
 
 ### 5.6. ARGOS (reconocimiento facial)
 
-```bash
-cd MICROSERVICIOS/ARGOS
-pip install -r requirements.txt
-python runserver.py      # http://0.0.0.0:5000 ; precarga el modelo ArcFace
-```
+ARGOS vive en su propio repositorio (`dev/ARGOS`, hermano de este). Ver
+[`../ARGOS/01-ARQUITECTURA.md`](../ARGOS/01-ARQUITECTURA.md) para cómo compilarlo y ejecutarlo.
 
 ---
 
